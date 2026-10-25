@@ -1,10 +1,32 @@
 # ovo-chaperone
 
-Import a [Chaperone](https://rosettacommons.github.io/chaperone/) run into OVO, as a pool of designs
+Import a [Chaperone](https://rosettacommons.github.io/chaperone/) run into [OVO](https://github.com/MSDLLCpapers/ovo), as a pool of designs
 plus one table of its metrics.
 
 This is a proof of concept of a **generic** pipeline import: it reads whatever steps and whatever
 metrics a run happens to hold, so no Chaperone block or metric name appears anywhere in this plugin.
+
+## Setup
+
+```bash
+# Install the plugin (and OVO if not installed already):
+pip install git+https://github.com/prihoda/ovo-chaperone
+
+# Initialize ovo home dir (if not already initialized)
+ovo init home
+
+# Run ovo web app
+ovo app
+```
+
+In the app, open **Designs → Upload designs** and pick the **Chaperone run** tab. Give it a run
+directory, choose the final step, name the pool, and import. The designed chains are prefilled from
+the run, and importing closes the dialog and selects the new pool, so one run cannot be imported
+twice. Open a single design afterwards for one structure per Chaperone step, each with what that
+step measured.
+
+The tab is contributed as an `ovo.design_upload` extension point, so it sits beside OVO's own
+**File upload** tab rather than on a page of its own.
 
 ## How it works
 
@@ -20,37 +42,14 @@ run.
 | metrics of every step | a CSV in the same directory, referenced by a `ChaperoneImportArtifact` |
 | the import itself | a `DesignJob` carrying `ChaperoneDesignWorkflow`, which routes the design visualization |
 
-### Why metrics are not descriptors
+### Why metrics are not descriptors (yet?)
 
-Chaperone does not declare its metrics anywhere machine-readable: a block's `compile()` puts whatever
-keys it likes into a JSON column, with no units, no direction and no stable vocabulary. Turning them
-into OVO descriptors would mean hand-mapping every metric name, and each one would become a permanent
-`descriptor_value.descriptor_key` - so an upstream rename would orphan stored values and need a key
-migration.
+Chaperone does not declare its available metrics anywhere machine-readable. 
+Turning them into OVO descriptors would mean hand-mapping every metric name. 
+So for now, we keep all metrics in a CSV artifact, and the design page shows them in a table.
 
 Keeping them in an artifact costs the descriptor machinery: imported metrics do **not** appear in the
 wide descriptor table, the descriptor plots, acceptance thresholds, ranking or the Excel export.
-
-The plugin deliberately ships **no design view** to paper over that. Opening a single design shows
-its structures per step with what that step measured, and the full table is a CSV in storage —
-anything more is a reason to integrate with the OVO data model properly rather than to build a
-parallel UI. The raw table is retained, so an import can be replayed into real descriptor values
-once Chaperone exports a metric registry (name, unit, direction).
-
-## Use it
-
-```bash
-pip install -e .
-```
-
-In the app, open **Designs → Upload designs** and pick the **Chaperone run** tab. Give it a run
-directory, choose the final step, name the pool, and import. The designed chains are prefilled from
-the run, and importing closes the dialog and selects the new pool, so one run cannot be imported
-twice. Open a single design afterwards for one structure per Chaperone step, each with what that
-step measured.
-
-The tab is contributed as an `ovo.design_upload` extension point, so it sits beside OVO's own
-**File upload** tab rather than on a page of its own.
 
 ### Importing from a server path
 
