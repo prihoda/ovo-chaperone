@@ -1,0 +1,10 @@
+*.egg-info
+/build
+/work
+.DS_Store
+*.pyc
+test-results
+/.idea
+/.vscode
+__pycache__/
+.env

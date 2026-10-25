@@ -1,0 +1,27 @@
+{
+  "specification": {
+    "input": "files/target.pdb",
+    "contigs": "A1-100/0 60-60"
+  },
+  "diffused_index_map": {},
+  "metrics": {
+    "radius_of_gyration": 11.558934953550256,
+    "helix_fraction": 0.8709677419354839,
+    "loop_fraction": 0.12903225806451613,
+    "sheet_fraction": 0.0,
+    "n_contact_interface": 54.0,
+    "n_chainbreaks": 0,
+    "num_residues": 212,
+    "n_clashing": {
+      "interresidue_clashes_w_backbone": 0,
+      "interresidue_clashes_w_sidechain": 0
+    },
+    "fixed_com": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "ckpt_path": "rfd3_latest.ckpt",
+  "seed": 1000
+}

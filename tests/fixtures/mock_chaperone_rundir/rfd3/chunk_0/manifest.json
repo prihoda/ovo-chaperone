@@ -1,0 +1,10 @@
+{
+  "name": "rfd3",
+  "command": [
+    "rfd3",
+    "design",
+    "inputs=inputs/binder.json"
+  ],
+  "cwd": "/Users/prihodad/Documents/projects/ovo_chaperone/tests/fixtures/mock_chaperone_rundir/rfd3/chunk_0",
+  "command_str": "rfd3 design inputs=inputs/binder.json"
+}

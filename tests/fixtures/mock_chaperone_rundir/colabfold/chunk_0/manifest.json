@@ -1,0 +1,12 @@
+{
+  "name": "colabfold",
+  "command": [
+    "colabfold_batch",
+    "inputs",
+    "outputs",
+    "--msa-mode",
+    "single_sequence"
+  ],
+  "cwd": "/Users/prihodad/Documents/projects/ovo_chaperone/tests/fixtures/mock_chaperone_rundir/colabfold/chunk_0",
+  "command_str": "colabfold_batch inputs outputs --msa-mode single_sequence"
+}

@@ -1,0 +1,11 @@
+{
+  "name": "mpnn",
+  "command": [
+    "python",
+    "/opt/LigandMPNN/run.py",
+    "--config_json",
+    "inputs/mpnn.json"
+  ],
+  "cwd": "/Users/prihodad/Documents/projects/ovo_chaperone/tests/fixtures/mock_chaperone_rundir/mpnn/chunk_0",
+  "command_str": "python /opt/LigandMPNN/run.py --config_json inputs/mpnn.json"
+}
