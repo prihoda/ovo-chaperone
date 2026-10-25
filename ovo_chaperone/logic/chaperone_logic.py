@@ -35,7 +35,7 @@ STRUCTURE_EXTENSIONS = (".cif", ".mmcif", ".pdb")
 
 
 @dataclass
-class ChaperoneDesign:
+class ChaperoneDesignRow:
     """One design of a Chaperone run, as read from the final step's handler row.
 
     :param chaperone_design_id: Id the design has in Chaperone, or the stem of its structure
@@ -65,7 +65,7 @@ class ChaperoneRun:
     rundir: str
     final_step: str
     step_names: list[str]
-    designs: list[ChaperoneDesign]
+    designs: list[ChaperoneDesignRow]
 
 
 @dataclass
@@ -245,15 +245,15 @@ def read_chaperone_rundir(rundir: str, final_step: str = None) -> ChaperoneRun:
 
     designs = []
     for _, row in frame.iterrows():
-        structure_paths = read_structure_paths(row["structures"], rundir)
+        structure_paths = get_structure_paths(row["structures"], rundir)
         metrics = flatten_metrics(parse_json_object(row["metrics"]))
         designs.append(
-            ChaperoneDesign(
+            ChaperoneDesignRow(
                 chaperone_design_id=format_chaperone_design_id(row, structure_paths, final_step),
                 structure_paths=structure_paths,
                 metrics=metrics,
                 sequences=parse_json_object(row.get("sequences")),
-                motif_chains=read_motif_chains(row["structures"]),
+                motif_chains=get_motif_chains(row["structures"]),
             )
         )
 
@@ -265,7 +265,7 @@ def read_chaperone_rundir(rundir: str, final_step: str = None) -> ChaperoneRun:
     )
 
 
-def read_allowed_rundirs() -> list[str]:
+def get_allowed_rundirs() -> list[str]:
     """Return the directories a non-admin may import a run from, as absolute paths.
 
     Configured per installation, since a path input reads the server's filesystem::
@@ -288,7 +288,7 @@ def check_rundir_path(path: str, *, allow_any: bool, allowed_dirs: list[str]) ->
 
     :param path: Directory the user named
     :param allow_any: Whether any readable directory is allowed, which admins are given
-    :param allowed_dirs: Directories the path has to be inside of, see :func:`read_allowed_rundirs`
+    :param allowed_dirs: Directories the path has to be inside of, see :func:`get_allowed_rundirs`
     """
     if not os.path.isdir(path):
         return f"Not a directory: `{path}`"
@@ -336,7 +336,7 @@ def find_design_row(table: pd.DataFrame, design_id: str):
     return None if rows.empty else rows.iloc[0]
 
 
-def read_design_structure_paths(
+def get_design_structure_paths(
     table: pd.DataFrame, design_id: str, step_names: list[str]
 ) -> dict[str, str]:
     """Return the storage path of the structure each step published for one design, by step name."""
@@ -434,7 +434,7 @@ def describe_columns(table: pd.DataFrame) -> list[ChaperoneColumn]:
     return columns
 
 
-def read_structure_paths(structures, rundir: str) -> dict[str, str]:
+def get_structure_paths(structures, rundir: str) -> dict[str, str]:
     """Return the structure path each step contributed, by step name, keeping the last of a step.
 
     Chaperone writes absolute paths; a relative one is resolved against the run directory, so a run
@@ -470,7 +470,7 @@ def flatten_metrics(metrics: dict, prefix: str = "") -> dict[str, object]:
     return flat
 
 
-def order_step_names(designs: list[ChaperoneDesign]) -> list[str]:
+def order_step_names(designs: list[ChaperoneDesignRow]) -> list[str]:
     """Return every step the designs mention, structures first in lineage order, then metric-only steps."""
     ordered = []
     for design in designs:
@@ -504,7 +504,7 @@ def strip_structure_extension(filename: str) -> str:
     return base if extension.lower() in STRUCTURE_EXTENSIONS else stem
 
 
-def resolve_designed_chains(pdb_str: str, design: ChaperoneDesign, designed_chains: list[str]) -> list[str]:
+def resolve_designed_chains(pdb_str: str, design: ChaperoneDesignRow, designed_chains: list[str]) -> list[str]:
     """Return the chain ids to treat as designed, which is what a design spec is built around.
 
     An explicit ``designed_chains`` wins. Otherwise the motif chains are taken as the fixed ones
@@ -519,7 +519,7 @@ def resolve_designed_chains(pdb_str: str, design: ChaperoneDesign, designed_chai
     return [chain for chain in chains if chain not in design.motif_chains] or chains
 
 
-def format_designed_chains(design: ChaperoneDesign) -> list[str]:
+def format_designed_chains(design: ChaperoneDesignRow) -> list[str]:
     """Return the design's chains that are not motif, or an empty list if that cannot be told.
 
     Chaperone does not state which chain is the design, but a structure-producing block records
@@ -538,7 +538,7 @@ def format_run_designed_chains(run: ChaperoneRun) -> list[str]:
     return sorted({chain for design in run.designs for chain in format_designed_chains(design)})
 
 
-def read_motif_chains(structures) -> set[str]:
+def get_motif_chains(structures) -> set[str]:
     """Return the chains any step marked as motif, taking the chain letter of each residue id."""
     chains = set()
     for structure in [] if structures is None else list(structures):

@@ -19,7 +19,7 @@ def test_chaperone_import(project_data, tmp_path):
         format_run_designed_chains,
         pick_final_step,
         read_chaperone_rundir,
-        read_design_structure_paths,
+        get_design_structure_paths,
         read_metrics_table,
         save_chaperone_import,
     )
@@ -130,10 +130,10 @@ def test_chaperone_import(project_data, tmp_path):
 
     # the design visualization reads one structure per step out of that table
     for saved in designs:
-        paths = read_design_structure_paths(table, saved.id, artifact.step_names)
+        paths = get_design_structure_paths(table, saved.id, artifact.step_names)
         assert sorted(paths) == sorted(MOCK_STEPS)
         assert paths[artifact.final_step] == saved.structure_path
-    assert read_design_structure_paths(table, "ovo_nope_0001", artifact.step_names) == {}
+    assert get_design_structure_paths(table, "ovo_nope_0001", artifact.step_names) == {}
 
     # --- refusals ---
     with pytest.raises(ValueError, match="No Chaperone step found"):
@@ -196,17 +196,17 @@ def test_check_rundir_path(tmp_path):
     )
 
 
-def test_read_allowed_rundirs(monkeypatch, tmp_path):
+def test_get_allowed_rundirs(monkeypatch, tmp_path):
     """The allowed directories come from the plugin's own config section, as absolute paths."""
     from ovo import config
-    from ovo_chaperone.logic.chaperone_logic import read_allowed_rundirs
+    from ovo_chaperone.logic.chaperone_logic import get_allowed_rundirs
 
     monkeypatch.setitem(config.plugins, "ovo_chaperone", {})
-    assert read_allowed_rundirs() == []
+    assert get_allowed_rundirs() == []
 
     monkeypatch.setitem(config.plugins, "ovo_chaperone", {"allowed_rundirs": [str(tmp_path), "~/runs"]})
-    assert read_allowed_rundirs() == [str(tmp_path), os.path.expanduser("~/runs")]
+    assert get_allowed_rundirs() == [str(tmp_path), os.path.expanduser("~/runs")]
 
     # a single directory may be written without a list
     monkeypatch.setitem(config.plugins, "ovo_chaperone", {"allowed_rundirs": str(tmp_path)})
-    assert read_allowed_rundirs() == [str(tmp_path)]
+    assert get_allowed_rundirs() == [str(tmp_path)]

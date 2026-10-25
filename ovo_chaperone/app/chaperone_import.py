@@ -19,7 +19,7 @@ from ovo_chaperone.logic.chaperone_logic import (
     discover_chaperone_steps,
     format_run_designed_chains,
     pick_final_step,
-    read_allowed_rundirs,
+    get_allowed_rundirs,
     read_chaperone_rundir,
     save_chaperone_import,
 )
@@ -27,18 +27,25 @@ from ovo_chaperone.logic.chaperone_logic import (
 # what the upload dialog's round selectbox holds when a new round is to be created
 NEW_ROUND = "__new__"
 
+# shown to an admin, who is the one who can allow a directory for everyone else
+ALLOWED_RUNDIRS_EXAMPLE = """plugins:
+  ovo_chaperone:
+    allowed_rundirs:
+      - /shared/chaperone/runs
+"""
+
 
 def show_rundir_input() -> str | None:
     """Show the run directory inputs and return the directory to read, if there is one.
 
     Naming a directory the server can already see is the quick path when Chaperone ran on the same
     filesystem. An admin may name any of them; everyone else is held to the configured ones, see
-    :func:`~ovo_chaperone.logic.chaperone_logic.read_allowed_rundirs`. Uploading always works, and
+    :func:`~ovo_chaperone.logic.chaperone_logic.get_allowed_rundirs`. Uploading always works, and
     is materialized into a temporary directory that lives as long as the session, so the run can be
     previewed before importing.
     """
     is_admin = get_username() in config.auth.admin_users
-    allowed_dirs = read_allowed_rundirs()
+    allowed_dirs = get_allowed_rundirs()
     tab_upload, tab_path = st.tabs(["Upload directory", "Server path"])
 
     with tab_path:
@@ -65,10 +72,17 @@ def show_server_path_input(*, is_admin: bool, allowed_dirs: list[str]) -> str | 
         key="chaperone_rundir_path",
     )
     if is_admin:
+        others = (
+            "Everyone else is held to " + ", ".join(f"`{directory}`" for directory in allowed_dirs)
+            if allowed_dirs
+            else "Everyone else can only upload, until you list the directories to allow"
+        )
         st.caption(
             "The engine's rundir, holding one directory per step. You are an admin, so any "
-            "directory the server can read is allowed."
+            f"directory the server can read is allowed. {others}, under "
+            "`plugins.ovo_chaperone.allowed_rundirs` in `config.yml`:"
         )
+        st.code(ALLOWED_RUNDIRS_EXAMPLE, language="yaml")
     elif allowed_dirs:
         st.caption(
             "The engine's rundir, holding one directory per step. It has to be inside "
@@ -219,7 +233,6 @@ def show_chaperone_upload(*, project_id: str, round_id: str, new_round_name: str
     st.query_params[ROUND_IDS_QUERY_PARAM] = result.pool.round_id
     st.query_params["pool_ids"] = result.pool.id
     st.session_state.pop("chaperone_rundir_path", None)
-    st.text("✅ Done")
     st.rerun()
 
 

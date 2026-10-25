@@ -18,7 +18,7 @@ from ovo import storage, viz
 from ovo.app.utils.cached_db import get_cached_design
 from ovo_chaperone.logic.chaperone_logic import (
     find_chaperone_import,
-    read_design_structure_paths,
+    get_design_structure_paths,
     read_metrics_table,
 )
 from ovo_chaperone.database.models_chaperone import (
@@ -41,7 +41,7 @@ def visualize_chaperone_design_structures(design_id: str, height="500px"):
         return
 
     table = get_cached_metrics_table(imported.metrics_table_path)
-    structure_paths = read_design_structure_paths(table, design_id, imported.step_names)
+    structure_paths = get_design_structure_paths(table, design_id, imported.step_names)
     if not structure_paths:
         st.write("The Chaperone import holds no structures for this design.")
         return
@@ -84,6 +84,6 @@ def get_cached_chaperone_import(pool_id: str) -> ChaperoneImportArtifact | None:
     return find_chaperone_import(pool_id)
 
 
-@st.cache_data(max_entries=20, ttl="10m", show_spinner="Loading Chaperone metrics...")
+@st.cache_data(max_entries=10, ttl="10m", show_spinner="Loading Chaperone metrics...")
 def get_cached_metrics_table(metrics_table_path: str) -> pd.DataFrame:
     return read_metrics_table(metrics_table_path)

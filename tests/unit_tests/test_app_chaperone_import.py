@@ -104,6 +104,10 @@ def test_import_a_run(admin_user, chaperone_tab, project_data):
     _, project_round, _ = project_data
     at = chaperone_tab
 
+    # an admin may name any directory, and is shown how to allow some for everyone else
+    assert not at.text_input(key="chaperone_rundir_path").disabled
+    assert any("allowed_rundirs" in block.value for block in at.code), [b.value for b in at.code]
+
     at = at.text_input(key="chaperone_rundir_path").set_value(MOCK_RUNDIR).run()
     assert not at.exception, at.exception
 
