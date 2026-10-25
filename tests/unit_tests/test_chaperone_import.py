@@ -11,7 +11,7 @@ from tests.fixture_paths import MOCK_DESIGN_IDS, MOCK_RUNDIR, MOCK_STEPS
 def test_chaperone_import(project_data, tmp_path):
     from ovo import db, storage
     from ovo.core.database.models import DescriptorValue, ProjectArtifact
-    from ovo_chaperone.chaperone_import import (
+    from ovo_chaperone.logic.chaperone_logic import (
         discover_chaperone_steps,
         find_chaperone_import,
         flatten_metrics,
@@ -23,7 +23,7 @@ def test_chaperone_import(project_data, tmp_path):
         read_metrics_table,
         save_chaperone_import,
     )
-    from ovo_chaperone.models_chaperone import (
+    from ovo_chaperone.database.models_chaperone import (
         CHAPERONE_ID_COLUMN,
         DESIGN_ID_COLUMN,
         ChaperoneDesignWorkflow,
@@ -149,3 +149,64 @@ def test_chaperone_import(project_data, tmp_path):
         "a.c.d": 2,
         "e": "[1, 2]",
     }
+
+
+def test_check_rundir_path(tmp_path):
+    """Who may name a server path, and which paths they may name."""
+    from ovo_chaperone.logic.chaperone_logic import check_rundir_path
+
+    allowed = tmp_path / "allowed"
+    (allowed / "runs" / "one").mkdir(parents=True)
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    allowed_dirs = [str(allowed)]
+
+    # an admin may name any directory, and no one may name something that is not one
+    assert check_rundir_path(str(elsewhere), allow_any=True, allowed_dirs=[]) is None
+    assert "Not a directory" in check_rundir_path(
+        str(tmp_path / "missing"), allow_any=True, allowed_dirs=[]
+    )
+
+    # without configuration a non-admin may name nothing, and is told what to do instead
+    refusal = check_rundir_path(str(elsewhere), allow_any=False, allowed_dirs=[])
+    assert "allowed_rundirs" in refusal and "Upload" in refusal
+
+    # with configuration, inside is allowed and outside is refused
+    assert check_rundir_path(str(allowed), allow_any=False, allowed_dirs=allowed_dirs) is None
+    assert check_rundir_path(str(allowed / "runs" / "one"), allow_any=False, allowed_dirs=allowed_dirs) is None
+    assert "outside the allowed directories" in check_rundir_path(
+        str(elsewhere), allow_any=False, allowed_dirs=allowed_dirs
+    )
+
+    # a sibling whose name merely starts with an allowed one is not inside it
+    sibling = tmp_path / "allowed_too"
+    sibling.mkdir()
+    assert "outside the allowed directories" in check_rundir_path(
+        str(sibling), allow_any=False, allowed_dirs=allowed_dirs
+    )
+
+    # neither '..' nor a symlink can leave an allowed directory
+    assert "outside the allowed directories" in check_rundir_path(
+        str(allowed / "runs" / ".." / ".." / "elsewhere"), allow_any=False, allowed_dirs=allowed_dirs
+    )
+    escape = allowed / "escape"
+    escape.symlink_to(elsewhere, target_is_directory=True)
+    assert "outside the allowed directories" in check_rundir_path(
+        str(escape), allow_any=False, allowed_dirs=allowed_dirs
+    )
+
+
+def test_read_allowed_rundirs(monkeypatch, tmp_path):
+    """The allowed directories come from the plugin's own config section, as absolute paths."""
+    from ovo import config
+    from ovo_chaperone.logic.chaperone_logic import read_allowed_rundirs
+
+    monkeypatch.setitem(config.plugins, "ovo_chaperone", {})
+    assert read_allowed_rundirs() == []
+
+    monkeypatch.setitem(config.plugins, "ovo_chaperone", {"allowed_rundirs": [str(tmp_path), "~/runs"]})
+    assert read_allowed_rundirs() == [str(tmp_path), os.path.expanduser("~/runs")]
+
+    # a single directory may be written without a list
+    monkeypatch.setitem(config.plugins, "ovo_chaperone", {"allowed_rundirs": str(tmp_path)})
+    assert read_allowed_rundirs() == [str(tmp_path)]

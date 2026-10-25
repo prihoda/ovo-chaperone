@@ -114,11 +114,11 @@ class ChaperoneDesignWorkflow(DesignWorkflow):
     def process_results(self, job: Union[DesignJob, DescriptorJob], callback: Callable = None) -> list[Base]:
         raise NotImplementedError(
             "A Chaperone import has no job to process: its designs and metrics are saved by "
-            "ovo_chaperone.chaperone_import.save_chaperone_import()."
+            "ovo_chaperone.logic.chaperone_logic.save_chaperone_import()."
         )
 
     @classmethod
     def visualize_single_design_structures(cls, design_id: str):
-        from ovo_chaperone.visualize_chaperone import visualize_chaperone_design_structures
+        from ovo_chaperone.app.visualize_chaperone import visualize_chaperone_design_structures
 
         visualize_chaperone_design_structures(design_id)

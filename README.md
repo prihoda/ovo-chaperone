@@ -43,18 +43,36 @@ once Chaperone exports a metric registry (name, unit, direction).
 pip install -e .
 ```
 
-Then in the app:
+In the app, open **Designs → Upload designs** and pick the **Chaperone run** tab. Give it a run
+directory, choose the final step, name the pool, and import. The designed chains are prefilled from
+the run, and importing closes the dialog and selects the new pool, so one run cannot be imported
+twice. Open a single design afterwards for one structure per Chaperone step, each with what that
+step measured.
 
-1. **🎩 Chaperone Import** - pick the project, round and pool name, give it a run directory
-   (upload one, or name a server-side path if you are an admin), choose the final step, and import.
-   The designed chains are prefilled from the run and the page redirects to **Designs** afterwards,
-   so a run cannot be imported twice by clicking again.
-2. Open a single design for one structure per Chaperone step, each with what that step measured.
+The tab is contributed as an `ovo.design_upload` extension point, so it sits beside OVO's own
+**File upload** tab rather than on a page of its own.
+
+### Importing from a server path
+
+Everyone sees the **Server path** tab, but a path is only read when it is allowed. Admins may name
+any directory. Everyone else is held to the directories listed in the plugin's config section, and
+can name none until one is listed:
+
+```yaml
+# config.yml
+plugins:
+  ovo_chaperone:
+    allowed_rundirs:
+      - /shared/chaperone/runs
+```
+
+Symlinks and `..` are resolved before the check, so a path cannot leave an allowed directory.
+Uploading a run directory always works and needs no configuration.
 
 From Python:
 
 ```python
-from ovo_chaperone.chaperone_import import read_chaperone_rundir, save_chaperone_import
+from ovo_chaperone.logic.chaperone_logic import read_chaperone_rundir, save_chaperone_import
 
 run = read_chaperone_rundir("/path/to/chaperone/rundir")   # pure, reads nothing but the run
 result = save_chaperone_import(run=run, project_id=..., pool_name="My run", round_id=...)

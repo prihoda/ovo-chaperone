@@ -15,11 +15,11 @@ from io import StringIO
 
 import pandas as pd
 
-from ovo import db, storage
+from ovo import config, db, storage
 from ovo.core.auth import get_username
 from ovo.core.database.models import Design, DesignJob, DesignSpec, Pool, ProjectArtifact, Round
 from ovo.core.utils.pdb import get_sequences_from_pdb_str, mmcif_to_pdb
-from ovo_chaperone.models_chaperone import (
+from ovo_chaperone.database.models_chaperone import (
     CHAPERONE_ID_COLUMN,
     DESIGN_ID_COLUMN,
     STRUCTURE_PATH_SUFFIX,
@@ -94,7 +94,7 @@ def save_chaperone_import(
     Creates one :class:`~ovo.core.database.models.Design` per entry of ``run``, from the structure of
     the run's final step, and stores every step's structure in the pool's storage directory. The
     metrics go to a CSV in the same directory, referenced by one
-    :class:`~ovo_chaperone.models_chaperone.ChaperoneImportArtifact`; no descriptor values are
+    :class:`~ovo_chaperone.database.models_chaperone.ChaperoneImportArtifact`; no descriptor values are
     written, see that class. The designs, the pool, the job and the new round (if any) are saved in
     one atomic ``save_all``, the artifact right after it.
 
@@ -262,6 +262,53 @@ def read_chaperone_rundir(rundir: str, final_step: str = None) -> ChaperoneRun:
         final_step=final_step,
         step_names=order_step_names(designs),
         designs=designs,
+    )
+
+
+def read_allowed_rundirs() -> list[str]:
+    """Return the directories a non-admin may import a run from, as absolute paths.
+
+    Configured per installation, since a path input reads the server's filesystem::
+
+        plugins:
+          ovo_chaperone:
+            allowed_rundirs:
+              - /shared/chaperone/runs
+
+    An empty list means only admins may name a path; everyone else uploads instead.
+    """
+    configured = config.plugins.get("ovo_chaperone", {}).get("allowed_rundirs") or []
+    if isinstance(configured, str):
+        configured = [configured]
+    return [os.path.abspath(os.path.expanduser(str(directory))) for directory in configured]
+
+
+def check_rundir_path(path: str, *, allow_any: bool, allowed_dirs: list[str]) -> str | None:
+    """Return why a named run directory may not be read, or None when it may.
+
+    :param path: Directory the user named
+    :param allow_any: Whether any readable directory is allowed, which admins are given
+    :param allowed_dirs: Directories the path has to be inside of, see :func:`read_allowed_rundirs`
+    """
+    if not os.path.isdir(path):
+        return f"Not a directory: `{path}`"
+    if allow_any:
+        return None
+    if not allowed_dirs:
+        return (
+            "Importing from a server path is not configured on this installation. Upload the run "
+            "directory instead, or ask an admin to list the directories to allow under "
+            "`plugins.ovo_chaperone.allowed_rundirs` in `config.yml`."
+        )
+    # realpath on both sides, so a symlink or a '..' cannot leave an allowed directory
+    resolved = os.path.realpath(path)
+    for directory in allowed_dirs:
+        allowed = os.path.realpath(directory)
+        if resolved == allowed or resolved.startswith(allowed + os.sep):
+            return None
+    return (
+        f"`{path}` is outside the allowed directories: "
+        + ", ".join(f"`{directory}`" for directory in allowed_dirs)
     )
 
 

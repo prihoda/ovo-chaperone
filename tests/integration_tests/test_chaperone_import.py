@@ -6,12 +6,12 @@ from tests.fixture_paths import MOCK_DESIGN_IDS, MOCK_RUNDIR, MOCK_STEPS
 def test_chaperone_import_into_ovo_home(project_data):
     from ovo import db, storage
     from ovo.core.database.models import ProjectArtifact
-    from ovo_chaperone.chaperone_import import (
+    from ovo_chaperone.logic.chaperone_logic import (
         read_chaperone_rundir,
         read_metrics_table,
         save_chaperone_import,
     )
-    from ovo_chaperone.models_chaperone import (
+    from ovo_chaperone.database.models_chaperone import (
         DESIGN_ID_COLUMN,
         ChaperoneDesignWorkflow,
         ChaperoneImportArtifact,

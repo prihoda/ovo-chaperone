@@ -1,14 +1,14 @@
 """Show the structures of one imported Chaperone design, one tab per step.
 
 Routed to by
-:meth:`~ovo_chaperone.models_chaperone.ChaperoneDesignWorkflow.visualize_single_design_structures`.
+:meth:`~ovo_chaperone.database.models_chaperone.ChaperoneDesignWorkflow.visualize_single_design_structures`.
 
 This is deliberately all the UI the plugin has. The imported metrics live in a
-:class:`~ovo_chaperone.models_chaperone.ChaperoneImportArtifact` rather than in descriptor values,
+:class:`~ovo_chaperone.database.models_chaperone.ChaperoneImportArtifact` rather than in descriptor values,
 so they are not reachable by OVO's descriptor table, plots, thresholds or ranking; a plugin-owned
 view of them would only make that detour comfortable. The metrics of the step being looked at are
 shown here beside its structure, and the whole table can be read with
-:func:`~ovo_chaperone.chaperone_import.read_metrics_table`.
+:func:`~ovo_chaperone.logic.chaperone_logic.read_metrics_table`.
 """
 
 import pandas as pd
@@ -16,12 +16,12 @@ import streamlit as st
 
 from ovo import storage, viz
 from ovo.app.utils.cached_db import get_cached_design
-from ovo_chaperone.chaperone_import import (
+from ovo_chaperone.logic.chaperone_logic import (
     find_chaperone_import,
     read_design_structure_paths,
     read_metrics_table,
 )
-from ovo_chaperone.models_chaperone import (
+from ovo_chaperone.database.models_chaperone import (
     CHAPERONE_ID_COLUMN,
     DESIGN_ID_COLUMN,
     STRUCTURE_PATH_SUFFIX,
